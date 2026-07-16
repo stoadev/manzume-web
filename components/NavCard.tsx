@@ -79,19 +79,14 @@ export default function NavCard({
 
     if (isNumeric) {
       const exact: (Suggestion & { sortKey: number })[] = [];
-      const prefix: (Suggestion & { sortKey: number })[] = [];
       for (const p of poems) {
         const base = p.no.replace("-A", "");
-        const entry = { no: p.no, label: `${p.no} · ${p.firstLine ?? ""}`, sortKey: p.sortKey };
         if (base === q) {
-          exact.push(entry);
-        } else if (base.startsWith(q)) {
-          prefix.push(entry);
+          exact.push({ no: p.no, label: `${p.no} · ${p.firstLine ?? ""}`, sortKey: p.sortKey });
         }
       }
       exact.sort((a, b) => a.sortKey - b.sortKey);
-      prefix.sort((a, b) => a.sortKey - b.sortKey);
-      return [...exact, ...prefix].slice(0, MAX_SUGGESTIONS);
+      return exact.slice(0, MAX_SUGGESTIONS);
     }
 
     if (!fuse) return [];

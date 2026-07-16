@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const BLOCKS_PER_LEAF = 12;
+const MIN_FONT_SIZE = 12;
+const MAX_FONT_SIZE = 18;
+const RESIZE_DEBOUNCE_MS = 100;
+const SAFETY_MARGIN = 0.97;
+/** Asılı girinti (`pl-5 indent-[-1.25em]`) mısra genişliğinden çıkarılmalı — bkz. hesaplama. */
+const HANGING_INDENT_EM = 1.25;
 
 interface PoemLeavesProps {
   blocks: string[][];
@@ -23,6 +29,9 @@ export default function PoemLeaves({
   }
 
   const [leafIndex, setLeafIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [fontSize, setFontSize] = useState<number | null>(null);
 
   useEffect(() => {
     setLeafIndex(0);
@@ -49,14 +58,100 @@ export default function PoemLeaves({
   }, [leafIndex, leaves.length, prevHref, nextHref, router]);
 
   const currentLeaf = leaves[leafIndex] ?? [];
+  const currentLines = currentLeaf.flat();
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const measureEl = measureRef.current;
+    if (!container || !measureEl || currentLines.length === 0) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    function recompute() {
+      const container = containerRef.current;
+      const measureEl = measureRef.current;
+      if (!container || !measureEl || !ctx || cancelled) return;
+
+      const style = getComputedStyle(measureEl);
+      // Kapsayıcının padding'lerini (px-2/sm:px-0) ve asılı girintiyi
+      // (pl-5 = 1.25rem, rem bazlı olduğundan font-size'dan bağımsız)
+      // kullanılabilir genişlikten düş — ölçüm gerçek render alanıyla eşleşsin.
+      const containerStyle = getComputedStyle(container);
+      const containerWidth =
+        container.clientWidth -
+        parseFloat(containerStyle.paddingLeft) -
+        parseFloat(containerStyle.paddingRight);
+      const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const hangingIndentPx = HANGING_INDENT_EM * rootFontSize;
+      const availableWidth = containerWidth - hangingIndentPx;
+      if (availableWidth <= 0) return;
+
+      ctx.font = `${style.fontStyle} ${style.fontWeight} ${MAX_FONT_SIZE}px ${style.fontFamily}`;
+
+      let longestWidth = 0;
+      for (const line of currentLines) {
+        const width = ctx.measureText(line).width;
+        if (width > longestWidth) longestWidth = width;
+      }
+      if (longestWidth <= 0) return;
+
+      const computed =
+        MAX_FONT_SIZE * (availableWidth / longestWidth) * SAFETY_MARGIN;
+      const clamped = Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, computed));
+      setFontSize(clamped);
+    }
+
+    function scheduleRecompute() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(recompute, RESIZE_DEBOUNCE_MS);
+    }
+
+    // Lora yüklenmeden ölçülürse yedek fontla yanlış genişlik hesaplanır.
+    document.fonts.load(`${MAX_FONT_SIZE}px Lora`).catch(() => {});
+    recompute();
+    document.fonts.ready.then(() => {
+      if (!cancelled) recompute();
+    });
+
+    const resizeObserver = new ResizeObserver(scheduleRecompute);
+    resizeObserver.observe(container);
+
+    return () => {
+      cancelled = true;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      resizeObserver.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLines.join("\n")]);
 
   return (
     <div>
-      <div className="mx-auto w-fit max-w-full space-y-6 text-left font-serif text-lg text-ink">
+      <div
+        ref={containerRef}
+        className="mx-auto max-w-full space-y-6 px-2 text-left font-serif text-ink sm:px-0"
+        style={{
+          fontSize: fontSize ? `${fontSize}px` : undefined,
+          visibility: fontSize ? "visible" : "hidden",
+        }}
+      >
+        {/* Ölçüm için görünmez referans metin — gerçek font ile eşleşir */}
+        <span
+          ref={measureRef}
+          aria-hidden
+          className="pointer-events-none absolute -z-10 whitespace-nowrap opacity-0"
+        >
+          measure
+        </span>
+
         {currentLeaf.map((block, i) => (
           <div key={i} className="space-y-1">
             {block.map((line, j) => (
-              <p key={j}>{line}</p>
+              <p key={j} className="pl-5 indent-[-1.25em]">
+                {line}
+              </p>
             ))}
           </div>
         ))}
