@@ -15,7 +15,7 @@ export default function PoemView({
   nextHref,
 }: PoemViewProps) {
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10 pb-20 md:pb-10">
+    <div className="mx-auto max-w-2xl px-6 py-10 pb-36 lg:pb-10">
       <div className="rounded-lg border border-border bg-bg-card px-8 py-10 shadow-sm sm:px-12 sm:py-14">
         <div className="mb-6 font-sans text-xs text-ink-muted">
           <span className="tracking-wide text-accent uppercase">

@@ -100,51 +100,69 @@ export default function ReaderShell({
         <NavCard book={book} poems={poems} />
       </div>
 
-      {/* Mobil alt bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between border-t border-border bg-bg-card px-4 py-2 font-sans text-xs text-ink-muted lg:hidden">
-        <button
-          type="button"
-          aria-label="Gezinme kartını aç"
-          onClick={() => setSheetOpen(true)}
-          className="text-lg"
-        >
-          ☰
-        </button>
-        <span>
-          Manzume {index + 1} / {total}
-        </span>
-        <span className="w-6" />
-      </div>
-
-      {/* Mobil: alttan açılan sheet */}
-      {sheetOpen && (
-        <div className="fixed inset-0 z-50 flex items-end lg:hidden">
+      {/* Mobil: konum çipi + tam genişlik alt bar */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-30 lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="flex justify-center border-t border-border bg-bg-card px-4 pt-1.5">
+          <span className="rounded-full font-sans text-xs text-ink-muted">
+            Manzume {index + 1} / {total}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-px border-t border-border bg-border">
           <button
             type="button"
-            aria-label="Kapat"
-            onClick={() => setSheetOpen(false)}
-            className="absolute inset-0 bg-black/40"
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Gezinme"
-            className="relative w-full rounded-t-lg border-t border-border bg-bg-card px-6 py-6 shadow-xl"
+            aria-label="Önceki manzume"
+            disabled={!prevHref}
+            onClick={() => prevHref && router.push(prevHref)}
+            className="flex min-h-[48px] flex-col items-center justify-center gap-0.5 bg-bg-card px-2 py-2 font-sans text-sm text-ink disabled:text-ink-muted disabled:opacity-40"
           >
-            <div className="mb-4 flex items-center justify-end">
-              <button
-                type="button"
-                aria-label="Kapat"
-                onClick={() => setSheetOpen(false)}
-                className="font-sans text-xl leading-none text-ink-muted hover:text-accent"
-              >
-                ×
-              </button>
-            </div>
+            <span className="text-xl leading-none">←</span>
+            <span>Önceki</span>
+          </button>
+          <button
+            type="button"
+            aria-label="Manzume bul"
+            onClick={() => setSheetOpen(true)}
+            className="flex min-h-[48px] flex-col items-center justify-center gap-0.5 bg-bg-card px-2 py-2 font-sans text-sm text-ink"
+          >
+            <span className="text-xl leading-none">🔍</span>
+            <span>Manzume Bul</span>
+          </button>
+          <button
+            type="button"
+            aria-label="Sonraki manzume"
+            disabled={!nextHref}
+            onClick={() => nextHref && router.push(nextHref)}
+            className="flex min-h-[48px] flex-col items-center justify-center gap-0.5 bg-bg-card px-2 py-2 font-sans text-sm text-ink disabled:text-ink-muted disabled:opacity-40"
+          >
+            <span className="text-xl leading-none">→</span>
+            <span>Sonraki</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobil: tam ekran arama sheet */}
+      {sheetOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-bg lg:hidden">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <span className="font-serif text-sm text-ink-muted">Manzume Bul</span>
+            <button
+              type="button"
+              onClick={() => setSheetOpen(false)}
+              className="rounded border border-border px-3 py-2 font-sans text-sm text-ink"
+            >
+              Kapat
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-6">
             <NavCard
               book={book}
               poems={poems}
               onNavigate={() => setSheetOpen(false)}
+              autoFocus
+              size="large"
             />
           </div>
         </div>

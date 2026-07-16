@@ -1,4 +1,4 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+﻿# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 /node_modules
@@ -40,16 +40,19 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# python (veri çıkarım scripti)
+# build-time üretilen arama index'i
+/public/search-index.json
+
+# python (veri Ã§Ä±karÄ±m scripti)
 __pycache__/
 *.pyc
 
-# kaynak dosyalar ve iç çalışma dokümanları (repoya girmez)
+# kaynak dosyalar ve iÃ§ Ã§alÄ±ÅŸma dokÃ¼manlarÄ± (repoya girmez)
 docs/
 CLAUDE.md
 PLAN.md
 CHANGELOG.md
 messages.md
 AGENTS.md
-scripts/
+scripts/*.py
 data/**/extraction_report.md
