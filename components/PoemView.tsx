@@ -5,13 +5,31 @@ import ArabicPages from "@/components/ArabicPages";
 import PoemLeaves from "@/components/PoemLeaves";
 import type { ArapcaInfo, Poem, Section } from "@/lib/data";
 
-/** Okuyucunun "Arapça nüsha" tercihi manzumeler arasında korunur (localStorage). */
+/**
+ * "Arapça nüsha" açık/kapalı durumu:
+ * - Geniş ekranda (xl, yan yana) tercih localStorage'da tutulur; manzumeler arasında korunur
+ *   çünkü sağ sütun her zaman görünür.
+ * - Dar ekranda (alt alta) yalnızca o anki manzume için geçerlidir; sonraki manzumede kapalı
+ *   gelir — açık kalsaydı sayfanın altında görünmeden dururdu.
+ */
 const STORAGE_KEY = "arapca-nusha-acik";
+/** Tailwind `xl` kırılımı — PoemView'daki yan yana yerleşimle aynı. */
+const WIDE_QUERY = "(min-width: 80rem)";
 /** Yapışkan kartın ekran kenarına bıraktığı boşluk (px). */
 const STICKY_GAP = 16;
 const listeners = new Set<() => void>();
+let narrowOpen = false;
+
+function isWide(): boolean {
+  return window.matchMedia(WIDE_QUERY).matches;
+}
+
+function notify() {
+  listeners.forEach((l) => l());
+}
 
 function readPref(): boolean {
+  if (!isWide()) return narrowOpen;
   try {
     return localStorage.getItem(STORAGE_KEY) === "1";
   } catch {
@@ -20,18 +38,30 @@ function readPref(): boolean {
 }
 
 function writePref(open: boolean) {
-  try {
-    localStorage.setItem(STORAGE_KEY, open ? "1" : "0");
-  } catch {}
-  listeners.forEach((l) => l());
+  narrowOpen = open;
+  if (isWide()) {
+    try {
+      localStorage.setItem(STORAGE_KEY, open ? "1" : "0");
+    } catch {}
+  }
+  notify();
+}
+
+function resetNarrow() {
+  if (!narrowOpen) return;
+  narrowOpen = false;
+  notify();
 }
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
   window.addEventListener("storage", listener);
+  const media = window.matchMedia(WIDE_QUERY);
+  media.addEventListener("change", listener);
   return () => {
     listeners.delete(listener);
     window.removeEventListener("storage", listener);
+    media.removeEventListener("change", listener);
   };
 }
 
@@ -63,6 +93,11 @@ export default function PoemView({
   }
 
   const showArabic = arabicOpen && arapca !== null;
+
+  // Dar ekranda manzume değişince Arapça bölümü kapat.
+  useEffect(() => {
+    resetNarrow();
+  }, [poem.no]);
 
   useEffect(() => {
     if (!showArabic || !scrollOnOpen.current) return;
