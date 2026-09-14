@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import ArabicPages from "@/components/ArabicPages";
 import PoemLeaves from "@/components/PoemLeaves";
 import type { ArapcaInfo, Poem, Section } from "@/lib/data";
@@ -51,11 +51,22 @@ export default function PoemView({
   // Sunucu/ilk hidrasyonda kapalı; tarayıcıda kayıtlı tercih okunur.
   const arabicOpen = useSyncExternalStore(subscribe, readPref, () => false);
 
+  const arabicRef = useRef<HTMLDivElement>(null);
+  // Yalnızca düğmeyle açıldığında kaydır; sayfa yüklenirken kayıtlı tercihle açılırsa kaydırma.
+  const scrollOnOpen = useRef(false);
+
   function toggleArabic() {
+    scrollOnOpen.current = !arabicOpen;
     writePref(!arabicOpen);
   }
 
   const showArabic = arabicOpen && arapca !== null;
+
+  useEffect(() => {
+    if (!showArabic || !scrollOnOpen.current) return;
+    scrollOnOpen.current = false;
+    arabicRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [showArabic]);
 
   return (
     <div
@@ -75,9 +86,23 @@ export default function PoemView({
               type="button"
               onClick={toggleArabic}
               aria-pressed={showArabic}
-              className="rounded-full border border-border px-3 py-1 font-sans text-xs text-ink-muted transition-colors hover:border-accent hover:text-accent aria-pressed:border-accent aria-pressed:text-accent"
+              className="inline-flex items-center gap-1.5 rounded-full border border-accent bg-accent/10 px-3.5 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:bg-accent/20 aria-pressed:bg-accent aria-pressed:text-bg-card"
             >
-              {showArabic ? "Arapça nüshayı gizle" : "Arapça nüsha"}
+              {showArabic ? "Arapça nüshayı gizle" : "Arapça nüshayı göster"}
+              <svg
+                aria-hidden
+                viewBox="0 0 16 16"
+                className={`h-3.5 w-3.5 transition-transform ${showArabic ? "rotate-180" : ""}`}
+              >
+                <path
+                  d="M3.5 6l4.5 4.5L12.5 6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </button>
           )}
         </div>
@@ -94,7 +119,7 @@ export default function PoemView({
       </div>
 
       {showArabic && (
-        <div className="mt-6 xl:mt-0">
+        <div ref={arabicRef} className="mt-6 scroll-mt-4 xl:mt-0">
           <ArabicPages info={arapca} no={poem.no} />
         </div>
       )}
