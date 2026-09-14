@@ -74,6 +74,81 @@ function toPoem(raw: RawPoem): Poem {
   return { ...raw, fihristPage: raw.fihristPage ?? null, sortKey: sortKeyFromNo(raw.no), pageNo };
 }
 
+/* ------------------------------------------------------------------ */
+/* Arapça nüsha (DivanKenz Tam.pdf) sayfa eşlemesi                    */
+/* ------------------------------------------------------------------ */
+
+/** Sayfa görsellerinin CDN kökü; build sırasında env ile değiştirilebilir. */
+export const ARAPCA_CDN =
+  process.env.NEXT_PUBLIC_ARAPCA_CDN ??
+  "https://pub-7d618867abde484cb23868f9c0e9b521.r2.dev/arapca";
+
+interface ArapcaEntry {
+  no: string;
+  startPage: number;
+  endPage: number;
+  printedPage: number | null;
+  guess: boolean;
+}
+
+interface ArapcaData {
+  imagePattern: string;
+  poems: ArapcaEntry[];
+}
+
+export interface ArapcaPage {
+  /** PDF fiziksel sayfa no (görsel dosya adı bundan türer). */
+  page: number;
+  /** Kitabın basılı sayfa numarası. */
+  printed: number | null;
+  src: string;
+  /** Bu sayfada (kısmen de olsa) yer alan manzume numaraları. */
+  poems: string[];
+}
+
+export interface ArapcaInfo {
+  pages: ArapcaPage[];
+  /** Başlık okunamayıp komşulardan kestirilen eşleme. */
+  guess: boolean;
+}
+
+const arapcaCache = new Map<string, ArapcaData>();
+
+function loadArapca(slug: string): ArapcaData | null {
+  const cached = arapcaCache.get(slug);
+  if (cached) return cached;
+  const filePath = path.join(process.cwd(), "data", slug, "arapca.json");
+  if (!fs.existsSync(filePath)) return null;
+  const data = JSON.parse(fs.readFileSync(filePath, "utf-8")) as ArapcaData;
+  arapcaCache.set(slug, data);
+  return data;
+}
+
+function arapcaSrc(pattern: string, page: number): string {
+  return `${ARAPCA_CDN}/${pattern.replace("{page:03d}", String(page).padStart(3, "0"))}`;
+}
+
+/** Manzumenin Arapça nüshada geçtiği sayfalar; eşleme yoksa null. */
+export function getArapcaInfo(slug: string, no: string): ArapcaInfo | null {
+  const data = loadArapca(slug);
+  const entry = data?.poems.find((p) => p.no === no);
+  if (!data || !entry) return null;
+
+  const pages: ArapcaPage[] = [];
+  for (let page = entry.startPage; page <= entry.endPage; page++) {
+    const poems = data.poems
+      .filter((p) => !p.no.includes("-") && p.startPage <= page && page <= p.endPage)
+      .map((p) => p.no);
+    pages.push({
+      page,
+      printed: entry.printedPage === null ? null : entry.printedPage + (page - entry.startPage),
+      src: arapcaSrc(data.imagePattern, page),
+      poems,
+    });
+  }
+  return { pages, guess: entry.guess };
+}
+
 export function getBook(slug: string): BookMeta {
   return loadBookData(slug).book;
 }

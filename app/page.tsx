@@ -2,6 +2,7 @@ import PoemView from "@/components/PoemView";
 import ReaderShell from "@/components/ReaderShell";
 import {
   getAdjacentPoems,
+  getArapcaInfo,
   getBook,
   getOrderedPoems,
   getPoemSummaries,
@@ -17,6 +18,7 @@ export default function Home() {
   const poems = getPoemSummaries(SLUG);
   const section = sections.find((s) => s.harf === firstPoem.section) ?? null;
   const adjacent = getAdjacentPoems(SLUG, firstPoem.no);
+  const arapca = getArapcaInfo(SLUG, firstPoem.no);
   const prevHref = adjacent.prev ? `/manzume/${adjacent.prev.no}` : null;
   const nextHref = adjacent.next ? `/manzume/${adjacent.next.no}` : null;
 
@@ -32,6 +34,7 @@ export default function Home() {
       <PoemView
         poem={firstPoem}
         section={section}
+        arapca={arapca}
         prevHref={prevHref}
         nextHref={nextHref}
       />
