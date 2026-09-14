@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import NavCard from "@/components/NavCard";
 import type { BookMeta, PoemSummary } from "@/lib/data";
 
@@ -15,8 +15,6 @@ interface ReaderShellProps {
   children: React.ReactNode;
 }
 
-const SWIPE_THRESHOLD = 50;
-
 export default function ReaderShell({
   book,
   poems,
@@ -28,7 +26,6 @@ export default function ReaderShell({
 }: ReaderShellProps) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     if (!sheetOpen) return;
@@ -46,28 +43,8 @@ export default function ReaderShell({
     };
   }, [sheetOpen]);
 
-  function onTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
-  }
-
-  function onTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    touchStartX.current = null;
-
-    if (dx > SWIPE_THRESHOLD && prevHref) {
-      router.push(prevHref);
-    } else if (dx < -SWIPE_THRESHOLD && nextHref) {
-      router.push(nextHref);
-    }
-  }
-
   return (
-    <div
-      className="relative min-h-screen lg:pr-64"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-    >
+    <div className="relative min-h-screen lg:pr-64">
       {/* Masaüstü kenar okları */}
       <button
         type="button"
