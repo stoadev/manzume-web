@@ -7,6 +7,8 @@ import type { ArapcaInfo, Poem, Section } from "@/lib/data";
 
 /** Okuyucunun "Arapça nüsha" tercihi manzumeler arasında korunur (localStorage). */
 const STORAGE_KEY = "arapca-nusha-acik";
+/** Yapışkan kartın ekran kenarına bıraktığı boşluk (px). */
+const STICKY_GAP = 16;
 const listeners = new Set<() => void>();
 
 function readPref(): boolean {
@@ -68,6 +70,29 @@ export default function PoemView({
     arabicRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [showArabic]);
 
+  // Yan yana modda (xl) Türkçe kart yapışkan: ekrandan kısaysa üstten, uzunsa
+  // altı ekranın altına gelince asılı kalır; sağdaki Arapça sayfalar kaymaya devam eder.
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!showArabic || !card) return;
+
+    function update() {
+      if (!card) return;
+      const top = Math.min(STICKY_GAP, window.innerHeight - card.offsetHeight - STICKY_GAP);
+      card.style.top = `${top}px`;
+    }
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(card);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+      card.style.top = "";
+    };
+  }, [showArabic]);
+
   return (
     <div
       className={
@@ -76,7 +101,10 @@ export default function PoemView({
           : "mx-auto max-w-2xl px-3 py-10 pb-36 sm:px-6 lg:pb-10"
       }
     >
-      <div className="rounded-lg border border-border bg-bg-card px-4 py-10 shadow-sm sm:px-12 sm:py-14">
+      <div
+        ref={cardRef}
+        className={`rounded-lg border border-border bg-bg-card px-4 py-10 shadow-sm sm:px-12 sm:py-14${showArabic ? " xl:sticky" : ""}`}
+      >
         <div className="mb-6 flex items-center justify-between gap-3 font-sans text-xs text-ink-muted">
           <span className="tracking-wide text-accent uppercase">
             {section?.name}
