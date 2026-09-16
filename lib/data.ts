@@ -85,6 +85,9 @@ function toPoem(raw: RawPoem): Poem {
 export const OSMANLICA_CDN =
   process.env.NEXT_PUBLIC_OSMANLICA_CDN ??
   "https://cdn.manzumeler.com/arapca";
+/** Ana CDN çözümlenemezse (DNS yayılımı, kesinti) denenen yedek adres: R2'nin r2.dev URL'i. */
+export const OSMANLICA_CDN_FALLBACK =
+  "https://pub-7d618867abde484cb23868f9c0e9b521.r2.dev/arapca";
 
 interface OsmanlicaEntry {
   no: string;
@@ -105,6 +108,8 @@ export interface OsmanlicaPage {
   /** Kitabın basılı sayfa numarası. */
   printed: number | null;
   src: string;
+  /** Yedek CDN'deki aynı dosya. */
+  fallbackSrc: string;
   /** Bu sayfada (kısmen de olsa) yer alan manzume numaraları. */
   poems: string[];
 }
@@ -127,8 +132,8 @@ function loadOsmanlica(slug: string): OsmanlicaData | null {
   return data;
 }
 
-function osmanlicaSrc(pattern: string, page: number): string {
-  return `${OSMANLICA_CDN}/${pattern.replace("{page:03d}", String(page).padStart(3, "0"))}`;
+function osmanlicaFile(pattern: string, page: number): string {
+  return pattern.replace("{page:03d}", String(page).padStart(3, "0"));
 }
 
 /** Manzumenin Osmanlıca nüshada geçtiği sayfalar; eşleme yoksa null. */
@@ -145,7 +150,8 @@ export function getOsmanlicaInfo(slug: string, no: string): OsmanlicaInfo | null
     pages.push({
       page,
       printed: entry.printedPage === null ? null : entry.printedPage + (page - entry.startPage),
-      src: osmanlicaSrc(data.imagePattern, page),
+      src: `${OSMANLICA_CDN}/${osmanlicaFile(data.imagePattern, page)}`,
+      fallbackSrc: `${OSMANLICA_CDN_FALLBACK}/${osmanlicaFile(data.imagePattern, page)}`,
       poems,
     });
   }

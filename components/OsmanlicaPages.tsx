@@ -14,11 +14,20 @@ interface OsmanlicaPagesProps {
 
 export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
   const [zoomed, setZoomed] = useState<OsmanlicaPage | null>(null);
-  // CDN'den gelmeyen sayfalar (alan adı henüz aktif değil, dosya eksik vb.)
+  // Ana CDN'den gelmeyen sayfalar önce yedek adresten denenir; o da gelmezse yer tutucu.
+  const [fallback, setFallback] = useState<Set<number>>(() => new Set());
   const [failed, setFailed] = useState<Set<number>>(() => new Set());
 
-  function markFailed(page: number) {
-    setFailed((prev) => (prev.has(page) ? prev : new Set(prev).add(page)));
+  function onImageError(page: number) {
+    if (fallback.has(page)) {
+      setFailed((prev) => (prev.has(page) ? prev : new Set(prev).add(page)));
+    } else {
+      setFallback((prev) => new Set(prev).add(page));
+    }
+  }
+
+  function srcFor(p: OsmanlicaPage): string {
+    return fallback.has(p.page) ? p.fallbackSrc : p.src;
   }
 
   useEffect(() => {
@@ -88,13 +97,13 @@ export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- CDN görseli */}
                   <img
-                    src={p.src}
+                    src={srcFor(p)}
                     alt={`Osmanlıca nüsha, sayfa ${p.printed ?? p.page}`}
                     width={PAGE_WIDTH}
                     height={PAGE_HEIGHT}
                     loading="lazy"
                     decoding="async"
-                    onError={() => markFailed(p.page)}
+                    onError={() => onImageError(p.page)}
                     className="h-auto w-full"
                   />
                 </button>
@@ -120,7 +129,7 @@ export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- CDN görseli */}
           <img
-            src={zoomed.src}
+            src={srcFor(zoomed)}
             alt={`Osmanlıca nüsha, sayfa ${zoomed.printed ?? zoomed.page}`}
             width={PAGE_WIDTH}
             height={PAGE_HEIGHT}
