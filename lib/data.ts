@@ -84,7 +84,7 @@ function toPoem(raw: RawPoem): Poem {
  */
 export const OSMANLICA_CDN =
   process.env.NEXT_PUBLIC_OSMANLICA_CDN ??
-  "https://pub-7d618867abde484cb23868f9c0e9b521.r2.dev/arapca";
+  "https://cdn.manzumeler.com/arapca";
 
 interface OsmanlicaEntry {
   no: string;

@@ -14,6 +14,12 @@ interface OsmanlicaPagesProps {
 
 export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
   const [zoomed, setZoomed] = useState<OsmanlicaPage | null>(null);
+  // CDN'den gelmeyen sayfalar (alan adı henüz aktif değil, dosya eksik vb.)
+  const [failed, setFailed] = useState<Set<number>>(() => new Set());
+
+  function markFailed(page: number) {
+    setFailed((prev) => (prev.has(page) ? prev : new Set(prev).add(page)));
+  }
 
   useEffect(() => {
     if (!zoomed) return;
@@ -59,23 +65,40 @@ export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
           const others = p.poems.filter((n) => n !== no);
           return (
             <figure key={p.page}>
-              <button
-                type="button"
-                onClick={() => setZoomed(p)}
-                className="block w-full cursor-zoom-in overflow-hidden rounded border border-border bg-white"
-                aria-label={`Sayfa ${p.printed ?? p.page} — büyüt`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- statik export, CDN görseli */}
-                <img
-                  src={p.src}
-                  alt={`Osmanlıca nüsha, sayfa ${p.printed ?? p.page}`}
-                  width={PAGE_WIDTH}
-                  height={PAGE_HEIGHT}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-auto w-full"
-                />
-              </button>
+              {failed.has(p.page) ? (
+                <div
+                  role="img"
+                  aria-label={`Sayfa ${p.printed ?? p.page} görseli henüz yüklenemedi`}
+                  style={{ aspectRatio: `${PAGE_WIDTH} / ${PAGE_HEIGHT}` }}
+                  className="flex w-full flex-col items-center justify-center gap-2 rounded border border-dashed border-border bg-bg px-6 text-center"
+                >
+                  <span className="font-serif text-base text-ink-muted">
+                    Sayfa {p.printed ?? p.page}
+                  </span>
+                  <span className="font-sans text-xs text-ink-muted">
+                    Osmanlıca nüsha görseli yakında burada görünecek.
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setZoomed(p)}
+                  className="block w-full cursor-zoom-in overflow-hidden rounded border border-border bg-white"
+                  aria-label={`Sayfa ${p.printed ?? p.page} — büyüt`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- CDN görseli */}
+                  <img
+                    src={p.src}
+                    alt={`Osmanlıca nüsha, sayfa ${p.printed ?? p.page}`}
+                    width={PAGE_WIDTH}
+                    height={PAGE_HEIGHT}
+                    loading="lazy"
+                    decoding="async"
+                    onError={() => markFailed(p.page)}
+                    className="h-auto w-full"
+                  />
+                </button>
+              )}
               <figcaption className="mt-1.5 flex justify-between font-sans text-xs text-ink-muted">
                 <span>{p.printed !== null ? `Sayfa ${p.printed}` : `PDF s. ${p.page}`}</span>
                 {others.length > 0 && (
@@ -95,7 +118,7 @@ export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
           onClick={() => setZoomed(null)}
           className="fixed inset-0 z-50 flex cursor-zoom-out items-start justify-center overflow-auto bg-black/80 p-3 sm:p-6"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- statik export, CDN görseli */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- CDN görseli */}
           <img
             src={zoomed.src}
             alt={`Osmanlıca nüsha, sayfa ${zoomed.printed ?? zoomed.page}`}
