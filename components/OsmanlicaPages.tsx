@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ArapcaInfo, ArapcaPage } from "@/lib/data";
+import type { OsmanlicaInfo, OsmanlicaPage } from "@/lib/data";
 
 /* 150 dpi A4 render — layout kayması olmasın diye sabit oran. */
 const PAGE_WIDTH = 1240;
 const PAGE_HEIGHT = 1755;
 
-interface ArabicPagesProps {
-  info: ArapcaInfo;
+interface OsmanlicaPagesProps {
+  info: OsmanlicaInfo;
   no: string;
 }
 
-export default function ArabicPages({ info, no }: ArabicPagesProps) {
-  const [zoomed, setZoomed] = useState<ArapcaPage | null>(null);
+export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
+  const [zoomed, setZoomed] = useState<OsmanlicaPage | null>(null);
 
   useEffect(() => {
     if (!zoomed) return;
@@ -39,17 +39,17 @@ export default function ArabicPages({ info, no }: ArabicPagesProps) {
 
   return (
     <section
-      aria-label="Arapça nüsha"
+      aria-label="Osmanlıca nüsha"
       className="rounded-lg border border-border bg-bg-card px-4 py-8 shadow-sm sm:px-8"
     >
       <div className="mb-6 flex items-baseline justify-between gap-3 font-sans text-xs text-ink-muted">
-        <span className="tracking-wide text-accent uppercase">Arapça nüsha</span>
+        <span className="tracking-wide text-accent uppercase">Osmanlıca nüsha</span>
         {range && <span>{range}</span>}
       </div>
 
       {info.guess && (
         <p className="mb-4 font-sans text-xs text-ink-muted">
-          Bu manzumenin başlığı Arapça nüshada otomatik okunamadı; sayfa aralığı
+          Bu manzumenin başlığı Osmanlıca nüshada otomatik okunamadı; sayfa aralığı
           komşu manzumelerden kestirilmiştir.
         </p>
       )}
@@ -68,7 +68,7 @@ export default function ArabicPages({ info, no }: ArabicPagesProps) {
                 {/* eslint-disable-next-line @next/next/no-img-element -- statik export, CDN görseli */}
                 <img
                   src={p.src}
-                  alt={`Arapça nüsha, sayfa ${p.printed ?? p.page}`}
+                  alt={`Osmanlıca nüsha, sayfa ${p.printed ?? p.page}`}
                   width={PAGE_WIDTH}
                   height={PAGE_HEIGHT}
                   loading="lazy"
@@ -98,7 +98,7 @@ export default function ArabicPages({ info, no }: ArabicPagesProps) {
           {/* eslint-disable-next-line @next/next/no-img-element -- statik export, CDN görseli */}
           <img
             src={zoomed.src}
-            alt={`Arapça nüsha, sayfa ${zoomed.printed ?? zoomed.page}`}
+            alt={`Osmanlıca nüsha, sayfa ${zoomed.printed ?? zoomed.page}`}
             width={PAGE_WIDTH}
             height={PAGE_HEIGHT}
             className="h-auto w-full max-w-4xl rounded bg-white shadow-lg"

@@ -75,15 +75,18 @@ function toPoem(raw: RawPoem): Poem {
 }
 
 /* ------------------------------------------------------------------ */
-/* Arapça nüsha (DivanKenz Tam.pdf) sayfa eşlemesi                    */
+/* Osmanlıca nüsha (DivanKenz Tam.pdf) sayfa eşlemesi                 */
 /* ------------------------------------------------------------------ */
 
-/** Sayfa görsellerinin CDN kökü; build sırasında env ile değiştirilebilir. */
-export const ARAPCA_CDN =
-  process.env.NEXT_PUBLIC_ARAPCA_CDN ??
+/**
+ * Sayfa görsellerinin CDN kökü; build sırasında env ile değiştirilebilir.
+ * Bucket içindeki klasör adı tarihsel olarak `arapca/` (görseller o yolla yüklendi).
+ */
+export const OSMANLICA_CDN =
+  process.env.NEXT_PUBLIC_OSMANLICA_CDN ??
   "https://pub-7d618867abde484cb23868f9c0e9b521.r2.dev/arapca";
 
-interface ArapcaEntry {
+interface OsmanlicaEntry {
   no: string;
   startPage: number;
   endPage: number;
@@ -91,12 +94,12 @@ interface ArapcaEntry {
   guess: boolean;
 }
 
-interface ArapcaData {
+interface OsmanlicaData {
   imagePattern: string;
-  poems: ArapcaEntry[];
+  poems: OsmanlicaEntry[];
 }
 
-export interface ArapcaPage {
+export interface OsmanlicaPage {
   /** PDF fiziksel sayfa no (görsel dosya adı bundan türer). */
   page: number;
   /** Kitabın basılı sayfa numarası. */
@@ -106,35 +109,35 @@ export interface ArapcaPage {
   poems: string[];
 }
 
-export interface ArapcaInfo {
-  pages: ArapcaPage[];
+export interface OsmanlicaInfo {
+  pages: OsmanlicaPage[];
   /** Başlık okunamayıp komşulardan kestirilen eşleme. */
   guess: boolean;
 }
 
-const arapcaCache = new Map<string, ArapcaData>();
+const osmanlicaCache = new Map<string, OsmanlicaData>();
 
-function loadArapca(slug: string): ArapcaData | null {
-  const cached = arapcaCache.get(slug);
+function loadOsmanlica(slug: string): OsmanlicaData | null {
+  const cached = osmanlicaCache.get(slug);
   if (cached) return cached;
-  const filePath = path.join(process.cwd(), "data", slug, "arapca.json");
+  const filePath = path.join(process.cwd(), "data", slug, "osmanlica.json");
   if (!fs.existsSync(filePath)) return null;
-  const data = JSON.parse(fs.readFileSync(filePath, "utf-8")) as ArapcaData;
-  arapcaCache.set(slug, data);
+  const data = JSON.parse(fs.readFileSync(filePath, "utf-8")) as OsmanlicaData;
+  osmanlicaCache.set(slug, data);
   return data;
 }
 
-function arapcaSrc(pattern: string, page: number): string {
-  return `${ARAPCA_CDN}/${pattern.replace("{page:03d}", String(page).padStart(3, "0"))}`;
+function osmanlicaSrc(pattern: string, page: number): string {
+  return `${OSMANLICA_CDN}/${pattern.replace("{page:03d}", String(page).padStart(3, "0"))}`;
 }
 
-/** Manzumenin Arapça nüshada geçtiği sayfalar; eşleme yoksa null. */
-export function getArapcaInfo(slug: string, no: string): ArapcaInfo | null {
-  const data = loadArapca(slug);
+/** Manzumenin Osmanlıca nüshada geçtiği sayfalar; eşleme yoksa null. */
+export function getOsmanlicaInfo(slug: string, no: string): OsmanlicaInfo | null {
+  const data = loadOsmanlica(slug);
   const entry = data?.poems.find((p) => p.no === no);
   if (!data || !entry) return null;
 
-  const pages: ArapcaPage[] = [];
+  const pages: OsmanlicaPage[] = [];
   for (let page = entry.startPage; page <= entry.endPage; page++) {
     const poems = data.poems
       .filter((p) => !p.no.includes("-") && p.startPage <= page && page <= p.endPage)
@@ -142,7 +145,7 @@ export function getArapcaInfo(slug: string, no: string): ArapcaInfo | null {
     pages.push({
       page,
       printed: entry.printedPage === null ? null : entry.printedPage + (page - entry.startPage),
-      src: arapcaSrc(data.imagePattern, page),
+      src: osmanlicaSrc(data.imagePattern, page),
       poems,
     });
   }

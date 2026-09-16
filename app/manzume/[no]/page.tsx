@@ -3,7 +3,7 @@ import PoemView from "@/components/PoemView";
 import ReaderShell from "@/components/ReaderShell";
 import {
   getAdjacentPoems,
-  getArapcaInfo,
+  getOsmanlicaInfo,
   getBook,
   getPoem,
   getPoems,
@@ -34,7 +34,7 @@ export default async function ManzumePage({
   const poems = getPoemSummaries(SLUG);
   const section = sections.find((s) => s.harf === poem.section) ?? null;
   const adjacent = getAdjacentPoems(SLUG, no);
-  const arapca = getArapcaInfo(SLUG, no);
+  const osmanlica = getOsmanlicaInfo(SLUG, no);
   const prevHref = adjacent.prev ? `/manzume/${adjacent.prev.no}` : null;
   const nextHref = adjacent.next ? `/manzume/${adjacent.next.no}` : null;
 
@@ -50,7 +50,7 @@ export default async function ManzumePage({
       <PoemView
         poem={poem}
         section={section}
-        arapca={arapca}
+        osmanlica={osmanlica}
         prevHref={prevHref}
         nextHref={nextHref}
       />

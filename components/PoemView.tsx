@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import ArabicPages from "@/components/ArabicPages";
+import OsmanlicaPages from "@/components/OsmanlicaPages";
 import PoemLeaves from "@/components/PoemLeaves";
-import type { ArapcaInfo, Poem, Section } from "@/lib/data";
+import type { OsmanlicaInfo, Poem, Section } from "@/lib/data";
 
 /**
- * "Arapça nüsha" açık/kapalı durumu:
+ * "Osmanlıca nüsha" açık/kapalı durumu:
  * - Geniş ekranda (xl, yan yana) tercih localStorage'da tutulur; manzumeler arasında korunur
  *   çünkü sağ sütun her zaman görünür.
  * - Dar ekranda (alt alta) yalnızca o anki manzume için geçerlidir; sonraki manzumede kapalı
  *   gelir — açık kalsaydı sayfanın altında görünmeden dururdu.
  */
-const STORAGE_KEY = "arapca-nusha-acik";
+const STORAGE_KEY = "osmanlica-nusha-acik";
 /** Tailwind `xl` kırılımı — PoemView'daki yan yana yerleşimle aynı. */
 const WIDE_QUERY = "(min-width: 80rem)";
 /** Yapışkan kartın ekran kenarına bıraktığı boşluk (px). */
@@ -68,7 +68,7 @@ function subscribe(listener: () => void) {
 interface PoemViewProps {
   poem: Poem;
   section: Section | null;
-  arapca: ArapcaInfo | null;
+  osmanlica: OsmanlicaInfo | null;
   prevHref: string | null;
   nextHref: string | null;
 }
@@ -76,41 +76,41 @@ interface PoemViewProps {
 export default function PoemView({
   poem,
   section,
-  arapca,
+  osmanlica,
   prevHref,
   nextHref,
 }: PoemViewProps) {
   // Sunucu/ilk hidrasyonda kapalı; tarayıcıda kayıtlı tercih okunur.
-  const arabicOpen = useSyncExternalStore(subscribe, readPref, () => false);
+  const osmanlicaOpen = useSyncExternalStore(subscribe, readPref, () => false);
 
-  const arabicRef = useRef<HTMLDivElement>(null);
+  const osmanlicaRef = useRef<HTMLDivElement>(null);
   // Yalnızca düğmeyle açıldığında kaydır; sayfa yüklenirken kayıtlı tercihle açılırsa kaydırma.
   const scrollOnOpen = useRef(false);
 
-  function toggleArabic() {
-    scrollOnOpen.current = !arabicOpen;
-    writePref(!arabicOpen);
+  function toggleOsmanlica() {
+    scrollOnOpen.current = !osmanlicaOpen;
+    writePref(!osmanlicaOpen);
   }
 
-  const showArabic = arabicOpen && arapca !== null;
+  const showOsmanlica = osmanlicaOpen && osmanlica !== null;
 
-  // Dar ekranda manzume değişince Arapça bölümü kapat.
+  // Dar ekranda manzume değişince Osmanlıca bölümü kapat.
   useEffect(() => {
     resetNarrow();
   }, [poem.no]);
 
   useEffect(() => {
-    if (!showArabic || !scrollOnOpen.current) return;
+    if (!showOsmanlica || !scrollOnOpen.current) return;
     scrollOnOpen.current = false;
-    arabicRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [showArabic]);
+    osmanlicaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [showOsmanlica]);
 
   // Yan yana modda (xl) Türkçe kart yapışkan: ekrandan kısaysa üstten, uzunsa
-  // altı ekranın altına gelince asılı kalır; sağdaki Arapça sayfalar kaymaya devam eder.
+  // altı ekranın altına gelince asılı kalır; sağdaki Osmanlıca sayfalar kaymaya devam eder.
   const cardRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const card = cardRef.current;
-    if (!showArabic || !card) return;
+    if (!showOsmanlica || !card) return;
 
     function update() {
       if (!card) return;
@@ -126,36 +126,36 @@ export default function PoemView({
       window.removeEventListener("resize", update);
       card.style.top = "";
     };
-  }, [showArabic]);
+  }, [showOsmanlica]);
 
   return (
     <div
       className={
-        showArabic
+        showOsmanlica
           ? "mx-auto max-w-2xl px-3 py-10 pb-36 sm:px-6 lg:pb-10 xl:grid xl:max-w-6xl xl:grid-cols-2 xl:items-start xl:gap-6"
           : "mx-auto max-w-2xl px-3 py-10 pb-36 sm:px-6 lg:pb-10"
       }
     >
       <div
         ref={cardRef}
-        className={`rounded-lg border border-border bg-bg-card px-4 py-10 shadow-sm sm:px-12 sm:py-14${showArabic ? " xl:sticky" : ""}`}
+        className={`rounded-lg border border-border bg-bg-card px-4 py-10 shadow-sm sm:px-12 sm:py-14${showOsmanlica ? " xl:sticky" : ""}`}
       >
         <div className="mb-6 flex items-center justify-between gap-3 font-sans text-xs text-ink-muted">
           <span className="tracking-wide text-accent uppercase">
             {section?.name}
           </span>
-          {arapca && (
+          {osmanlica && (
             <button
               type="button"
-              onClick={toggleArabic}
-              aria-pressed={showArabic}
+              onClick={toggleOsmanlica}
+              aria-pressed={showOsmanlica}
               className="inline-flex items-center gap-1.5 rounded-full border border-accent bg-accent/10 px-3.5 py-1.5 font-sans text-xs font-medium text-accent transition-colors hover:bg-accent/20 aria-pressed:bg-accent aria-pressed:text-bg-card"
             >
-              {showArabic ? "Arapça nüshayı gizle" : "Arapça nüshayı göster"}
+              {showOsmanlica ? "Osmanlıca nüshayı gizle" : "Osmanlıca nüshayı göster"}
               <svg
                 aria-hidden
                 viewBox="0 0 16 16"
-                className={`h-3.5 w-3.5 transition-transform ${showArabic ? "rotate-180" : ""}`}
+                className={`h-3.5 w-3.5 transition-transform ${showOsmanlica ? "rotate-180" : ""}`}
               >
                 <path
                   d="M3.5 6l4.5 4.5L12.5 6"
@@ -181,9 +181,9 @@ export default function PoemView({
         />
       </div>
 
-      {showArabic && (
-        <div ref={arabicRef} className="mt-6 scroll-mt-4 xl:mt-0">
-          <ArabicPages info={arapca} no={poem.no} />
+      {showOsmanlica && (
+        <div ref={osmanlicaRef} className="mt-6 scroll-mt-4 xl:mt-0">
+          <OsmanlicaPages info={osmanlica} no={poem.no} />
         </div>
       )}
     </div>
