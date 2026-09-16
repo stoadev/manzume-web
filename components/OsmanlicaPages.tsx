@@ -7,6 +7,25 @@ import type { OsmanlicaInfo, OsmanlicaPage } from "@/lib/data";
 const PAGE_WIDTH = 1240;
 const PAGE_HEIGHT = 1755;
 
+/**
+ * Ana CDN erişilebilir mi? Tarayıcı DNS hatasını 20-30 sn'de bildirdiğinden
+ * beklemeden kısa zaman aşımlı bir yoklama yapılır; sonucu oturum boyunca
+ * bir kez hesaplanır. Ulaşılamıyorsa görseller doğrudan yedek adresten yüklenir.
+ */
+const PROBE_TIMEOUT_MS = 2500;
+let probe: Promise<boolean> | null = null;
+
+function primaryReachable(url: string): Promise<boolean> {
+  if (!probe) {
+    const signal =
+      typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(PROBE_TIMEOUT_MS) : undefined;
+    probe = fetch(url, { method: "HEAD", mode: "no-cors", cache: "no-store", signal })
+      .then(() => true)
+      .catch(() => false);
+  }
+  return probe;
+}
+
 interface OsmanlicaPagesProps {
   info: OsmanlicaInfo;
   no: string;
@@ -17,6 +36,19 @@ export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
   // Ana CDN'den gelmeyen sayfalar önce yedek adresten denenir; o da gelmezse yer tutucu.
   const [fallback, setFallback] = useState<Set<number>>(() => new Set());
   const [failed, setFailed] = useState<Set<number>>(() => new Set());
+  // null: yoklama sürüyor (görseller henüz istenmez), false: tümü yedekten
+  const [primaryOk, setPrimaryOk] = useState<boolean | null>(null);
+
+  const probeUrl = info.pages[0].src;
+  useEffect(() => {
+    let active = true;
+    primaryReachable(probeUrl).then((ok) => {
+      if (active) setPrimaryOk(ok);
+    });
+    return () => {
+      active = false;
+    };
+  }, [probeUrl]);
 
   function onImageError(page: number) {
     if (fallback.has(page)) {
@@ -27,7 +59,7 @@ export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
   }
 
   function srcFor(p: OsmanlicaPage): string {
-    return fallback.has(p.page) ? p.fallbackSrc : p.src;
+    return primaryOk === false || fallback.has(p.page) ? p.fallbackSrc : p.src;
   }
 
   useEffect(() => {
@@ -74,7 +106,13 @@ export default function OsmanlicaPages({ info, no }: OsmanlicaPagesProps) {
           const others = p.poems.filter((n) => n !== no);
           return (
             <figure key={p.page}>
-              {failed.has(p.page) ? (
+              {primaryOk === null ? (
+                <div
+                  aria-hidden
+                  style={{ aspectRatio: `${PAGE_WIDTH} / ${PAGE_HEIGHT}` }}
+                  className="w-full rounded border border-border bg-bg"
+                />
+              ) : failed.has(p.page) ? (
                 <div
                   role="img"
                   aria-label={`Sayfa ${p.printed ?? p.page} görseli henüz yüklenemedi`}
