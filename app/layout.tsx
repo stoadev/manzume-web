@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   title: "Divân-ı Kenz-i Şümûs",
   description:
     "Eş-Şeyh Es-Seyyid İbrahim Halil'in Divân-ı Kenz-i Şümûs eserinden manzumeler.",
+  // Site listelenmez: yalnızca linki bilenler girer (bkz. app/robots.ts, vercel.json).
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({
