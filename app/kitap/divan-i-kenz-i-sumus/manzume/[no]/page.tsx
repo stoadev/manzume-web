@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PoemView from "@/components/PoemView";
 import ReaderShell from "@/components/ReaderShell";
@@ -10,8 +11,15 @@ import {
   getPoemSummaries,
   getSections,
 } from "@/lib/data";
+import { poemHref } from "@/lib/routes";
 
 const SLUG = "divan-i-kenz-i-sumus";
+
+export const metadata: Metadata = {
+  title: { absolute: "Divân-ı Kenz-i Şümûs" },
+  description:
+    "Eş-Şeyh Es-Seyyid İbrahim Halil'in Divân-ı Kenz-i Şümûs eserinden manzumeler.",
+};
 
 export function generateStaticParams() {
   return getPoems(SLUG).map((poem) => ({ no: poem.no }));
@@ -35,11 +43,12 @@ export default async function ManzumePage({
   const section = sections.find((s) => s.harf === poem.section) ?? null;
   const adjacent = getAdjacentPoems(SLUG, no);
   const osmanlica = getOsmanlicaInfo(SLUG, no);
-  const prevHref = adjacent.prev ? `/manzume/${adjacent.prev.no}` : null;
-  const nextHref = adjacent.next ? `/manzume/${adjacent.next.no}` : null;
+  const prevHref = adjacent.prev ? poemHref(SLUG, adjacent.prev.no) : null;
+  const nextHref = adjacent.next ? poemHref(SLUG, adjacent.next.no) : null;
 
   return (
     <ReaderShell
+      slug={SLUG}
       book={book}
       poems={poems}
       index={adjacent.index}

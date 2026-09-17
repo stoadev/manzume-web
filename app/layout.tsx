@@ -13,9 +13,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Divân-ı Kenz-i Şümûs",
+  title: { default: "Manzumeler", template: "%s — Manzumeler" },
   description:
-    "Eş-Şeyh Es-Seyyid İbrahim Halil'in Divân-ı Kenz-i Şümûs eserinden manzumeler.",
+    "Eş-Şeyh Es-Seyyid İbrahim Halil'in eserleri: Divân-ı Kenz-i Şümûs manzumeleri ve Kenz'il-Maarif İlmihali.",
   // Site listelenmez: yalnızca linki bilenler girer (bkz. app/robots.ts, vercel.json).
   robots: { index: false, follow: false },
 };

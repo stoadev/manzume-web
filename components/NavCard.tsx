@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BookMeta, PoemSummary } from "@/lib/data";
 import { normalizeText } from "@/lib/normalize";
+import { poemHref } from "@/lib/routes";
 
 interface NavCardProps {
+  slug: string;
   book: BookMeta;
   poems: PoemSummary[];
   onNavigate?: () => void;
@@ -28,6 +30,7 @@ interface Suggestion {
 const MAX_SUGGESTIONS = 8;
 
 export default function NavCard({
+  slug,
   book,
   poems,
   onNavigate,
@@ -121,7 +124,7 @@ export default function NavCard({
     setQuery("");
     setOpen(false);
     setError(false);
-    router.push(`/manzume/${no}`);
+    router.push(poemHref(slug, no));
     onNavigate?.();
   }
 

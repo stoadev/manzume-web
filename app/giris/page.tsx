@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Giriş — Divân-ı Kenz-i Şümûs" };
+export const metadata: Metadata = { title: "Giriş" };
 
 export default async function GirisPage({
   searchParams,
