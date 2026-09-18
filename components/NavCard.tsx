@@ -3,9 +3,22 @@
 import Fuse from "fuse.js";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import SearchResults from "@/components/SearchResults";
 import type { BookMeta, PoemSummary } from "@/lib/data";
-import { normalizeText } from "@/lib/normalize";
 import { poemHref } from "@/lib/routes";
+import { normalizeText } from "@/lib/normalize";
+import {
+  FUSE_KEYS,
+  FUZZY_THRESHOLD,
+  MAX_HITS,
+  MIN_MATCH_CHARS,
+  exactHits,
+  fuzzyHits,
+  normalizeQuery,
+  withQuery,
+  type SearchHit,
+  type SearchRecord,
+} from "@/lib/search";
 
 interface NavCardProps {
   slug: string;
@@ -22,13 +35,6 @@ interface SearchIndexEntry {
   lines: string[];
 }
 
-interface Suggestion {
-  no: string;
-  label: string;
-}
-
-const MAX_SUGGESTIONS = 8;
-
 export default function NavCard({
   slug,
   book,
@@ -42,73 +48,89 @@ export default function NavCard({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState(false);
-  const [textIndex, setTextIndex] = useState<SearchIndexEntry[] | null>(null);
+  const [records, setRecords] = useState<SearchRecord[] | null>(null);
+  const [loading, setLoading] = useState(false);
   const fetchedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const large = size === "large";
 
   const isNumeric = /^\d/.test(query.trim());
+  const nq = isNumeric ? "" : normalizeQuery(query);
 
-  useEffect(() => {
-    if (isNumeric || fetchedRef.current) return;
+  function loadIndex() {
+    if (fetchedRef.current) return;
     fetchedRef.current = true;
-    fetch("/search-index.json")
+    setLoading(true);
+    const order = new Map(poems.map((p) => [p.no, p.sortKey]));
+    fetch("/search-index.json", { cache: "force-cache" })
       .then((res) => res.json())
-      .then((data: SearchIndexEntry[]) => setTextIndex(data))
+      .then((data: SearchIndexEntry[]) =>
+        setRecords(
+          data.map((entry) => ({
+            key: entry.no,
+            order: order.get(entry.no) ?? Number.MAX_SAFE_INTEGER,
+            label: `Manzume ${entry.no}`,
+            href: poemHref(slug, entry.no),
+            texts: entry.lines,
+            normTexts: entry.lines.map(normalizeText),
+          })),
+        ),
+      )
       .catch(() => {
         fetchedRef.current = false;
-      });
-  }, [isNumeric]);
+      })
+      .finally(() => setLoading(false));
+  }
+
+  // Mobil sheet açılır açılmaz dizini getir; masaüstünde kutuya odaklanınca / kelime yazılınca.
+  useEffect(() => {
+    if (autoFocus || nq) loadIndex();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus, nq]);
 
   const fuse = useMemo(() => {
-    if (!textIndex) return null;
-    return new Fuse(
-      textIndex.map((entry) => ({
-        no: entry.no,
-        firstLine: entry.firstLine ?? "",
-        text: entry.lines.map(normalizeText).join(" • "),
-      })),
-      {
-        keys: ["text"],
-        threshold: 0.35,
-        ignoreLocation: true,
-      },
-    );
-  }, [textIndex]);
+    if (!records) return null;
+    return new Fuse(records, {
+      keys: FUSE_KEYS,
+      threshold: FUZZY_THRESHOLD,
+      includeMatches: true,
+      ignoreLocation: true,
+      minMatchCharLength: MIN_MATCH_CHARS,
+    });
+  }, [records]);
 
-  const suggestions: Suggestion[] = useMemo(() => {
+  const { hits, total } = useMemo((): { hits: SearchHit[]; total: number } => {
     const q = query.trim();
-    if (!q) return [];
+    if (!q) return { hits: [], total: 0 };
 
+    // (a) numara: "12" → 12 ve 12-A, sıra sortKey
     if (isNumeric) {
-      const exact: (Suggestion & { sortKey: number })[] = [];
-      for (const p of poems) {
-        const base = p.no.replace("-A", "");
-        if (base === q) {
-          exact.push({ no: p.no, label: `${p.no} · ${p.firstLine ?? ""}`, sortKey: p.sortKey });
-        }
-      }
-      exact.sort((a, b) => a.sortKey - b.sortKey);
-      return exact.slice(0, MAX_SUGGESTIONS);
+      const all = poems
+        .filter((p) => p.no.replace("-A", "") === q)
+        .sort((a, b) => a.sortKey - b.sortKey)
+        .map<SearchHit>((p) => ({
+          id: p.no,
+          recordKey: p.no,
+          label: `Manzume ${p.no}`,
+          href: poemHref(slug, p.no),
+          quote: p.firstLine ?? "",
+          exact: true,
+        }));
+      return { hits: all.slice(0, MAX_HITS), total: all.length };
     }
 
-    if (!fuse) return [];
-    const normalizedQuery = normalizeText(q);
-    return fuse
-      .search(normalizedQuery)
-      .slice(0, MAX_SUGGESTIONS)
-      .map((result) => {
-        const lines = textIndex?.find((e) => e.no === result.item.no)?.lines ?? [];
-        const match =
-          lines.find((line) => normalizeText(line).includes(normalizedQuery)) ??
-          result.item.firstLine;
-        return { no: result.item.no, label: `${result.item.no} · ${match}` };
-      });
-  }, [query, isNumeric, poems, fuse, textIndex]);
-
-  useEffect(() => {
-    setActiveIndex(-1);
-  }, [suggestions]);
+    if (!records || !nq) return { hits: [], total: 0 };
+    // (b) birebir: her eşleşen mısra ayrı satır, kitap sırasında
+    const exact = exactHits(records, nq, { perRecord: Infinity, snippet: false, limit: MAX_HITS + 1 });
+    // (c) bulanık: birebir eşleşmeyen kayıtlar
+    const seen = new Set(exact.map((h) => h.recordKey));
+    const fuzzy =
+      fuse && exact.length <= MAX_HITS
+        ? fuzzyHits(fuse, nq, seen, MAX_HITS + 1 - exact.length, false)
+        : [];
+    const all = [...exact, ...fuzzy];
+    return { hits: all.slice(0, MAX_HITS), total: all.length };
+  }, [query, isNumeric, nq, poems, slug, records, fuse]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -120,11 +142,12 @@ export default function NavCard({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  function goTo(no: string) {
+  function goTo(hit: SearchHit) {
     setQuery("");
     setOpen(false);
     setError(false);
-    router.push(poemHref(slug, no));
+    setActiveIndex(-1);
+    router.push(isNumeric ? hit.href : withQuery(hit.href, nq));
     onNavigate?.();
   }
 
@@ -132,32 +155,46 @@ export default function NavCard({
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setOpen(true);
-      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+      setActiveIndex((i) => Math.min(i + 1, hits.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Escape") {
       setOpen(false);
     } else if (e.key === "Enter") {
-      if (activeIndex >= 0 && suggestions[activeIndex]) {
-        goTo(suggestions[activeIndex].no);
+      if (activeIndex >= 0 && hits[activeIndex]) {
+        goTo(hits[activeIndex]);
         return;
       }
-      const base = query.trim();
-      const found = poems.find((p) => p.no === base || p.no.replace("-A", "") === base);
-      if (found) {
-        goTo(found.no);
-      } else {
-        setError(true);
+      if (isNumeric) {
+        const base = query.trim();
+        const found = poems.find((p) => p.no === base || p.no.replace("-A", "") === base);
+        if (found) {
+          goTo({
+            id: found.no,
+            recordKey: found.no,
+            label: "",
+            href: poemHref(slug, found.no),
+            quote: "",
+            exact: true,
+          });
+        } else {
+          setError(true);
+        }
+      } else if (hits[0]) {
+        goTo(hits[0]);
       }
     }
   }
 
   return (
-    <div className="w-full font-sans text-sm" ref={containerRef}>
+    <div
+      className={`w-full font-sans text-sm ${large ? "flex min-h-0 flex-1 flex-col" : ""}`}
+      ref={containerRef}
+    >
       <p className="mb-4 truncate font-serif text-xs text-ink-muted">{book.name}</p>
 
-      <div className="relative">
+      <div className={large ? "flex min-h-0 flex-1 flex-col" : "relative"}>
         <label
           htmlFor="nav-search"
           className={`mb-1 block text-ink-muted ${large ? "text-sm" : "text-xs"}`}
@@ -172,13 +209,17 @@ export default function NavCard({
           onChange={(e) => {
             setQuery(e.target.value);
             setError(false);
+            setActiveIndex(-1);
             setOpen(true);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            setOpen(true);
+            loadIndex();
+          }}
           onKeyDown={onKeyDown}
           placeholder="no veya kelime…"
           role="combobox"
-          aria-expanded={open && suggestions.length > 0}
+          aria-expanded={open && hits.length > 0}
           aria-controls="nav-search-list"
           autoComplete="off"
           className={`w-full rounded border bg-bg text-ink outline-none focus:border-accent ${
@@ -190,30 +231,22 @@ export default function NavCard({
             Manzume bulunamadı.
           </p>
         )}
+        {loading && (
+          <p className={`mt-1 text-ink-muted ${large ? "text-sm" : "text-xs"}`}>
+            dizin yükleniyor…
+          </p>
+        )}
 
-        {open && suggestions.length > 0 && (
-          <ul
-            id="nav-search-list"
-            role="listbox"
-            className={`absolute z-10 mt-1 w-full overflow-y-auto rounded border border-border bg-bg-card shadow-sm ${
-              large ? "max-h-[60vh]" : "max-h-64"
-            }`}
-          >
-            {suggestions.map((s, i) => (
-              <li key={s.no} role="option" aria-selected={i === activeIndex}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => goTo(s.no)}
-                  className={`block w-full truncate text-left ${
-                    i === activeIndex ? "bg-bg text-accent" : "text-ink"
-                  } ${large ? "px-4 py-3 text-base" : "px-2 py-1.5"}`}
-                >
-                  {s.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+        {open && (
+          <SearchResults
+            hits={hits}
+            total={total}
+            nq={nq}
+            activeIndex={activeIndex}
+            large={large}
+            listId="nav-search-list"
+            onPick={goTo}
+          />
         )}
       </div>
     </div>

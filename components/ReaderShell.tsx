@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, useEffect, useState } from "react";
 import NavCard from "@/components/NavCard";
+import QueryHighlight from "@/components/QueryHighlight";
 import type { BookMeta, PoemSummary } from "@/lib/data";
 
 /** Mobil sheet içindeki özel nav, gezinince sheet'i kapatmak için bunu çağırır. */
@@ -23,6 +24,8 @@ interface ReaderShellProps {
   findLabel?: string;
   /** Verilirse yan kartta ve mobil sheet'te NavCard yerine bu render edilir. */
   nav?: React.ReactNode;
+  /** Mobil üst şeritte sağda Fihrist bağlantısı; verilmezse sağ boş kalır. */
+  fihristHref?: string;
   children: React.ReactNode;
 }
 
@@ -37,6 +40,7 @@ export default function ReaderShell({
   positionLabel,
   findLabel = "Manzume Bul",
   nav,
+  fihristHref,
   children,
 }: ReaderShellProps) {
   const router = useRouter();
@@ -61,7 +65,30 @@ export default function ReaderShell({
   }, [sheetOpen]);
 
   return (
+    <QueryHighlight>
     <div className="relative min-h-screen lg:pr-64">
+      {/* Mobil üst şerit */}
+      <div className="flex h-10 items-center justify-between border-b border-border bg-bg px-4 lg:hidden">
+        <Link
+          href="/"
+          className="shrink-0 min-w-[4.5rem] font-sans text-xs text-ink-muted hover:text-accent"
+        >
+          ← Eserler
+        </Link>
+        <span className="min-w-0 flex-1 truncate px-2 text-center font-sans text-xs text-ink-muted">
+          {book.name}
+        </span>
+        <div className="flex shrink-0 min-w-[4.5rem] justify-end">
+          {fihristHref ? (
+            <Link
+              href={fihristHref}
+              className="font-sans text-xs text-ink-muted hover:text-accent"
+            >
+              Fihrist
+            </Link>
+          ) : null}
+        </div>
+      </div>
       {/* Masaüstü kenar okları */}
       <button
         type="button"
@@ -95,7 +122,7 @@ export default function ReaderShell({
           href="/"
           className="mb-3 block font-sans text-xs text-ink-muted hover:text-accent"
         >
-          ← Kütüphane
+          ← Eserler
         </Link>
         {nav ?? <NavCard slug={slug} book={book} poems={poems ?? []} />}
       </div>
@@ -153,7 +180,7 @@ export default function ReaderShell({
                 onClick={() => setSheetOpen(false)}
                 className="font-sans text-xs text-ink-muted hover:text-accent"
               >
-                ← Kütüphane
+                ← Eserler
               </Link>
               <span className="font-serif text-sm text-ink-muted">{findLabel}</span>
             </div>
@@ -165,7 +192,7 @@ export default function ReaderShell({
               Kapat
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="flex min-h-0 flex-1 flex-col px-4 py-6">
             {nav ? (
               <SheetNavContext.Provider value={closeSheet}>{nav}</SheetNavContext.Provider>
             ) : (
@@ -182,5 +209,6 @@ export default function ReaderShell({
         </div>
       )}
     </div>
+    </QueryHighlight>
   );
 }

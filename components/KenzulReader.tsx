@@ -9,7 +9,7 @@ import {
   getKenzulEntry,
   getKenzulSummaries,
 } from "@/lib/kenzul";
-import type { KenzulType } from "@/lib/routes";
+import { bookHref, type KenzulType } from "@/lib/routes";
 
 /** Üç Kenz'il-Maarif okuma sayfasının ortak gövdesi (sunucu bileşeni). */
 export default function KenzulReader({ type, no }: { type: KenzulType; no: number | null }) {
@@ -31,7 +31,8 @@ export default function KenzulReader({ type, no }: { type: KenzulType; no: numbe
       prevHref={prevHref}
       nextHref={nextHref}
       positionLabel={`${adjacent.index + 1} / ${adjacent.total}`}
-      findLabel="Fihrist"
+      findLabel="Ara"
+      fihristHref={bookHref(KENZUL_SLUG)}
       nav={<KenzulNav bookName={book.name} summaries={summaries} />}
     >
       <ProseView entry={entry} prevHref={prevHref} nextHref={nextHref} />

@@ -18,4 +18,23 @@ const index = data.poems.map((poem) => ({
 fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(outPath, JSON.stringify(index), "utf-8");
 
-console.log(`search-index.json yazıldı: ${index.length} manzume.`);
+// Kenz'il-Maarif: bahis/manzume/giriş tam metin indeksi (Arapça yer tutucuları gürültü, atılır).
+const kenzulSrc = path.join(process.cwd(), "data", "kenzul-maarif", "kitap.json");
+const kenzulOut = path.join(outDir, "search-index-kenzul-maarif.json");
+const kenzul = JSON.parse(fs.readFileSync(kenzulSrc, "utf-8"));
+const ARABIC_TEXT = "[Arapça ibare]";
+const stripArabic = (s) => s.split(ARABIC_TEXT).join("").replace(/\s{2,}/g, " ").trim();
+
+const kenzulIndex = kenzul.entries.map((e) => ({
+  type: e.type,
+  no: e.no,
+  title: stripArabic(e.title),
+  text: (e.paragraphs ?? e.lines ?? []).map(stripArabic).filter(Boolean),
+}));
+
+fs.writeFileSync(kenzulOut, JSON.stringify(kenzulIndex), "utf-8");
+
+console.log(
+  `search-index.json yazıldı: ${index.length} manzume; ` +
+    `search-index-kenzul-maarif.json yazıldı: ${kenzulIndex.length} kayıt.`,
+);

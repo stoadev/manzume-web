@@ -7,7 +7,7 @@ export default function Home() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:py-16">
       <header className="mb-10 text-center">
         <p className="font-sans text-xs tracking-[0.3em] text-ink-muted uppercase">
-          Manzumeler
+          Eserler
         </p>
         <div className="mx-auto mt-4 h-px w-16 bg-accent" />
       </header>

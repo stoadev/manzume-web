@@ -2,6 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Highlighted from "@/components/Highlighted";
+import { useHighlightQuery } from "@/components/QueryHighlight";
+import { matchRanges } from "@/lib/search";
 
 const BLOCKS_PER_LEAF = 12;
 const MIN_FONT_SIZE = 12;
@@ -32,10 +35,19 @@ export default function PoemLeaves({
   const containerRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
   const [fontSize, setFontSize] = useState<number | null>(null);
+  const query = useHighlightQuery();
 
+  // ?q= ile gelindiyse ilk eşleşen mısranın yaprağından başla; yoksa ilk yaprak.
   useEffect(() => {
-    setLeafIndex(0);
-  }, [blocks]);
+    let leaf = 0;
+    if (query) {
+      const blockIdx = blocks.findIndex((block) =>
+        block.some((line) => matchRanges(line, query).length > 0),
+      );
+      if (blockIdx >= 0) leaf = Math.floor(blockIdx / BLOCKS_PER_LEAF);
+    }
+    setLeafIndex(leaf);
+  }, [blocks, query]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -150,7 +162,7 @@ export default function PoemLeaves({
           <div key={i} className="space-y-1">
             {block.map((line, j) => (
               <p key={j} className="pl-5 indent-[-1.25em]">
-                {line}
+                <Highlighted text={line} scroll />
               </p>
             ))}
           </div>

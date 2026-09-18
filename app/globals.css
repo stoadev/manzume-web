@@ -34,3 +34,15 @@ body {
   color: var(--ink);
   font-family: var(--font-serif), serif;
 }
+
+/* Arama sonucundan gelen sorgunun sayfadaki işareti (fosforlu kalem): yalnızca kelime, solmaz. */
+mark.search-hit {
+  background: #fff3a3;
+  color: inherit;
+  padding: 0;
+  border-radius: 2px;
+}
+
+:root[data-theme="dark"] mark.search-hit {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}

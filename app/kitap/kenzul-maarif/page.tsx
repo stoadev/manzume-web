@@ -18,27 +18,33 @@ export default function KenzulFihrist() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:py-16">
       <Link href="/" className="font-sans text-xs text-ink-muted hover:text-accent">
-        ← Kütüphane
+        ← Eserler
       </Link>
 
       <header className="mt-6 mb-10 text-center">
         <h1 className="font-serif text-2xl text-ink sm:text-3xl">{book.name}</h1>
         <p className="mt-2 font-sans text-xs text-ink-muted">{book.author}</p>
+        <p className="mt-6 font-sans text-xs tracking-[0.3em] text-ink-muted uppercase">
+          Fihrist
+        </p>
         <div className="mx-auto mt-4 h-px w-16 bg-accent" />
+      </header>
+
+      <div className="mb-6">
         <Link
           href={kenzulHref("giris", null)}
-          className="mt-6 inline-block rounded-full border border-border bg-bg-card px-4 py-1.5 font-sans text-sm text-ink hover:border-accent"
+          className="inline-block rounded-full border border-border bg-bg-card px-4 py-1.5 font-sans text-sm text-ink hover:border-accent"
         >
           Giriş ve Farzlar
         </Link>
-      </header>
+      </div>
 
       <section className="mb-10">
         <h2 className="mb-4 font-sans text-xs tracking-[0.2em] text-accent uppercase">
-          Manzumeler
+          Bahisler ({bahisler.length})
         </h2>
         <ol className="grid grid-cols-1 gap-x-6 gap-y-1.5 font-serif text-sm sm:grid-cols-2">
-          {manzumeler.map((s) => (
+          {bahisler.map((s) => (
             <li key={s.href}>
               <Link href={s.href} className="text-ink hover:text-accent">
                 {s.no}. {s.title}
@@ -50,10 +56,10 @@ export default function KenzulFihrist() {
 
       <section>
         <h2 className="mb-4 font-sans text-xs tracking-[0.2em] text-accent uppercase">
-          Bahisler
+          Manzumeler ({manzumeler.length})
         </h2>
         <ol className="grid grid-cols-1 gap-x-6 gap-y-1.5 font-serif text-sm sm:grid-cols-2">
-          {bahisler.map((s) => (
+          {manzumeler.map((s) => (
             <li key={s.href}>
               <Link href={s.href} className="text-ink hover:text-accent">
                 {s.no}. {s.title}
