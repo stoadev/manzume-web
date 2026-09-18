@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import KenzulNav from "@/components/KenzulNav";
 import { getKenzulBook, getKenzulSummaries } from "@/lib/kenzul";
 import { kenzulHref } from "@/lib/routes";
 
@@ -21,7 +22,7 @@ export default function KenzulFihrist() {
         ← Eserler
       </Link>
 
-      <header className="mt-6 mb-10 text-center">
+      <header className="mt-6 mb-8 text-center">
         <h1 className="font-serif text-2xl text-ink sm:text-3xl">{book.name}</h1>
         <p className="mt-2 font-sans text-xs text-ink-muted">{book.author}</p>
         <p className="mt-6 font-sans text-xs tracking-[0.3em] text-ink-muted uppercase">
@@ -29,6 +30,10 @@ export default function KenzulFihrist() {
         </p>
         <div className="mx-auto mt-4 h-px w-16 bg-accent" />
       </header>
+
+      <div className="mb-8">
+        <KenzulNav bookName={book.name} summaries={summaries} variant="inline" />
+      </div>
 
       <div className="mb-6">
         <Link

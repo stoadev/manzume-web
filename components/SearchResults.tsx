@@ -11,7 +11,9 @@ interface SearchResultsProps {
   nq: string;
   activeIndex: number;
   /** Mobil sheet: liste satır içi ve kalan yüksekliği kaydırarak kullanır. */
-  large: boolean;
+  large?: boolean;
+  /** Fihrist sayfası: liste sayfa akışında ve tam açılır (sayfa kaydırılır). */
+  inline?: boolean;
   listId: string;
   onPick: (hit: SearchHit) => void;
 }
@@ -22,25 +24,33 @@ export default function SearchResults({
   total,
   nq,
   activeIndex,
-  large,
+  large = false,
+  inline = false,
   listId,
   onPick,
 }: SearchResultsProps) {
   if (hits.length === 0) return null;
+  const isLarge = large || inline;
   return (
     <div
       className={
-        large
-          ? "mt-2 flex min-h-0 flex-1 flex-col"
-          : "absolute z-10 mt-1 w-full rounded border border-border bg-bg-card shadow-sm"
+        inline
+          ? "mt-2 w-full rounded border border-border bg-bg-card shadow-sm"
+          : large
+            ? "mt-2 flex min-h-0 flex-1 flex-col"
+            : "absolute z-10 mt-1 w-full rounded border border-border bg-bg-card shadow-sm"
       }
     >
       <ul
         id={listId}
         role="listbox"
         style={{ WebkitOverflowScrolling: "touch" }}
-        className={`divide-y divide-border overflow-y-auto ${
-          large ? "min-h-0 flex-1 rounded border border-border bg-bg-card" : "max-h-[60vh]"
+        className={`divide-y divide-border ${
+          inline
+            ? ""
+            : large
+              ? "min-h-0 flex-1 overflow-y-auto rounded border border-border bg-bg-card"
+              : "max-h-[60vh] overflow-y-auto"
         }`}
       >
         {hits.map((h, i) => (
@@ -51,9 +61,9 @@ export default function SearchResults({
               onClick={() => onPick(h)}
               className={`block min-h-[44px] w-full text-left ${
                 i === activeIndex ? "bg-bg" : ""
-              } ${large ? "px-4 py-3" : "px-2 py-2"}`}
+              } ${isLarge ? "px-4 py-3" : "px-2 py-2"}`}
             >
-              <span className={`line-clamp-2 font-serif text-ink ${large ? "text-base" : "text-sm"}`}>
+              <span className={`line-clamp-2 font-serif text-ink ${isLarge ? "text-base" : "text-sm"}`}>
                 <span className="mr-1 font-sans text-xs text-accent">{h.label}:</span>
                 <Highlighted text={h.quote} q={h.exact ? nq : ""} />
               </span>
@@ -64,7 +74,7 @@ export default function SearchResults({
           </li>
         ))}
       </ul>
-      <p className={`px-2 py-1.5 font-sans text-xs text-ink-muted ${large ? "px-4" : ""}`}>
+      <p className={`px-2 py-1.5 font-sans text-xs text-ink-muted ${isLarge ? "px-4" : ""}`}>
         {countLabel(total)}
       </p>
     </div>

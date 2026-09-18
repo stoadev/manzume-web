@@ -25,6 +25,7 @@ import {
 interface KenzulNavProps {
   bookName: string;
   summaries: KenzulSummary[];
+  variant?: "inline";
 }
 
 interface IndexEntry {
@@ -41,10 +42,12 @@ function keyOf(type: KenzulType, no: number | null) {
   return `${type}:${no ?? ""}`;
 }
 
-export default function KenzulNav({ bookName, summaries }: KenzulNavProps) {
+export default function KenzulNav({ bookName, summaries, variant }: KenzulNavProps) {
   const router = useRouter();
   const closeSheet = useContext(SheetNavContext);
-  const large = closeSheet !== null;
+  const isInline = variant === "inline";
+  const large = !isInline && closeSheet !== null;
+  const isLargeInput = large || isInline;
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [open, setOpen] = useState(false);
@@ -188,22 +191,28 @@ export default function KenzulNav({ bookName, summaries }: KenzulNavProps) {
 
   return (
     <div
-      className={`w-full font-sans text-sm ${large ? "flex min-h-0 flex-1 flex-col" : ""}`}
+      className={`w-full font-sans text-sm ${
+        large ? "flex min-h-0 flex-1 flex-col" : isInline ? "mx-auto max-w-2xl" : ""
+      }`}
       ref={containerRef}
     >
-      <p className="mb-1 truncate font-serif text-xs text-ink-muted">{bookName}</p>
-      <Link
-        href={bookHref("kenzul-maarif")}
-        onClick={() => closeSheet?.()}
-        className={`mb-4 block text-ink hover:text-accent ${large ? "text-base" : "text-xs"}`}
-      >
-        Fihrist
-      </Link>
+      {!isInline && (
+        <>
+          <p className="mb-1 truncate font-serif text-xs text-ink-muted">{bookName}</p>
+          <Link
+            href={bookHref("kenzul-maarif")}
+            onClick={() => closeSheet?.()}
+            className={`mb-4 block text-ink hover:text-accent ${large ? "text-base" : "text-xs"}`}
+          >
+            Fihrist
+          </Link>
+        </>
+      )}
 
-      <div className={large ? "flex min-h-0 flex-1 flex-col" : "relative"}>
+      <div className={large ? "flex min-h-0 flex-1 flex-col" : isInline ? "" : "relative"}>
         <label
           htmlFor="kenzul-search"
-          className={`mb-1 block text-ink-muted ${large ? "text-sm" : "text-xs"}`}
+          className={`mb-1 block text-ink-muted ${isLargeInput ? "text-sm" : "text-xs"}`}
         >
           Ara / git
         </label>
@@ -221,18 +230,19 @@ export default function KenzulNav({ bookName, summaries }: KenzulNavProps) {
             setOpen(true);
             loadIndex();
           }}
+          onClick={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder="no, başlık veya kelime…"
           role="combobox"
           aria-expanded={open && hits.length > 0}
           aria-controls="kenzul-search-list"
           autoComplete="off"
-          className={`w-full rounded border border-border bg-bg text-ink outline-none focus:border-accent ${
-            large ? "px-4 py-3 text-lg" : "px-2 py-1.5"
+          className={`w-full rounded border border-border bg-bg-card text-ink outline-none focus:border-accent ${
+            isLargeInput ? "px-4 py-3 text-lg" : "px-2 py-1.5"
           }`}
         />
         {loading && (
-          <p className={`mt-1 text-ink-muted ${large ? "text-sm" : "text-xs"}`}>
+          <p className={`mt-1 text-ink-muted ${isLargeInput ? "text-sm" : "text-xs"}`}>
             dizin yükleniyor…
           </p>
         )}
@@ -244,6 +254,7 @@ export default function KenzulNav({ bookName, summaries }: KenzulNavProps) {
             nq={nq}
             activeIndex={activeIndex}
             large={large}
+            inline={isInline}
             listId="kenzul-search-list"
             onPick={goTo}
           />

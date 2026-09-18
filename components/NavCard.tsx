@@ -222,7 +222,7 @@ export default function NavCard({
           aria-expanded={open && hits.length > 0}
           aria-controls="nav-search-list"
           autoComplete="off"
-          className={`w-full rounded border bg-bg text-ink outline-none focus:border-accent ${
+          className={`w-full rounded border bg-bg-card text-ink outline-none focus:border-accent ${
             error ? "border-red-500" : "border-border"
           } ${large ? "px-4 py-3 text-lg" : "px-2 py-1.5"}`}
         />
